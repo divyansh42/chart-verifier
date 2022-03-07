@@ -1,0 +1,67 @@
+name: Test dev chart-verifier
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  chart-verifier:
+    name: Test dev release
+    runs-on: ubuntu-20.04
+
+    env:
+      CHART_URI: https://github.com/redhat-actions/openshift-actions-runner-chart/blob/release-chart/packages/actions-runner-1.1.tgz?raw=true
+      VERIFY_ARGS: --chart-set githubOwner=${{ github.repository_owner }} --chart-set githubRepository=chart-verifier --chart-set githubPat=${{ secrets.REPO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          insecure_skip_tls_verify: true
+
+      - name: Print Kube context info
+        run: |
+          echo $KUBECONFIG
+
+      # - name: Install chart-verifier CLI
+      #   uses: redhat-actions/openshift-tools-installer@v1
+      #   with:
+      #     source: github
+      #     chart-verifier: latest
+
+      - name: Install chart-verifier CLI
+        run: |
+          curl -LO https://github.com/redhat-certification/chart-verifier/releases/download/dev/chart-verifier-dev.tgz
+          sudo tar xvzf chart-verifier-dev.tgz -C /usr/local/bin/ chart-verifier
+          chart-verifier version
+
+      - name: Ensure secret exists
+        run: |
+          [ -n '${{ secrets.REPO_TOKEN }}' ]
+
+      - uses: ./
+        name: Verify Chart
+        id: verify
+        with:
+          chart_uri: ${{ env.CHART_URI }}
+          verify_args: ${{ env.VERIFY_ARGS }}
+          fail: false
+
+      - name: echo outputs
+        run: echo "${{ toJSON(steps.verify.outputs) }}"
+
+      - uses: ./
+        name: Verify Chart with different profile
+        id: verify-2
+        with:
+          chart_uri: ${{ env.CHART_URI }}
+          verify_args: ${{ env.VERIFY_ARGS }}
+          profile_name: "community"
+          profile_version: "1.1"
+          fail: false
+
+      - name: echo outputs
+        run: echo "${{ toJSON(steps.verify-2.outputs) }}"
