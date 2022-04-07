@@ -64,9 +64,10 @@ async function run(): Promise<void> {
     if (profileArgs.length > 0) {
         verifyExtraArgs.push(...profileArgs);
     }
-    const verifyArgs = ghCore.getInput(Inputs.VERIFY_ARGS).trim().split(/\s+/);
-    ghCore.info(`Verify args --> ${verifyArgs.join(", ")}`);
-    ghCore.info(`Verify args lenght --> ${verifyArgs.length}`);
+    const verifyArgs = ghCore.getInput(Inputs.VERIFY_ARGS);
+    const trimVerifyArgs = verifyArgs.trim().split(/\s+/);
+    ghCore.info(`Verify args --> ${trimVerifyArgs.join(", ")}`);
+    ghCore.info(`Verify args lenght --> ${trimVerifyArgs.length}`);
     verifyExtraArgs.push(...verifyArgs);
 
     // Run verify
